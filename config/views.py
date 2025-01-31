@@ -5,11 +5,13 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from .serializers import BookSerializer
 from rest_framework import serializers, status
+from .permissions import *
 
 # Create your views here.
 
-# View - List and Create
 class BookListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         books = Book.objects.all()
         serializer = BookSerializer(books, many=True)
@@ -24,6 +26,8 @@ class BookListCreateView(APIView):
 
 # View - Retrieve, Update, Delete
 class BookDetailView(APIView):
+    permission_classes = [IsAuthorOrReadOnly]
+
     def get(self, request, book_id):
         book = get_object_or_404(Book, id=book_id)
         serializer = BookSerializer(book)
@@ -31,6 +35,7 @@ class BookDetailView(APIView):
 
     def put(self, request, book_id):
         book = get_object_or_404(Book, id=book_id)
+        self.check_object_permissions(request, book)
         serializer = BookSerializer(book, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -39,5 +44,6 @@ class BookDetailView(APIView):
 
     def delete(self, request, book_id):
         book = get_object_or_404(Book, id=book_id)
+        self.check_object_permissions(request, book)
         book.delete()
         return Response({'message': 'Book deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
